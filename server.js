@@ -4,7 +4,12 @@ const cors = require('cors');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+origin: 'https://health-zeta-ten.vercel.app',
+methods: ['GET', 'POST'],
+allowedHeaders: ['Content-Type']
+}));
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
