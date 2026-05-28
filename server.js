@@ -32,13 +32,9 @@ const { name, phone, email, service, message } = req.body;
 
 ```
 const mailOptions = {
-  from: process.env.EMAIL_USER,
-  to: process.env.EMAIL_USER,
-  subject: `New Inquiry From ${name}`,
- const mailOptions = {
 from: process.env.EMAIL_USER,
 to: process.env.EMAIL_USER,
-subject: `New Inquiry From ${name}`,
+subject: 'New Inquiry From ' + name,
 text:
 'Name: ' + name +
 '\nPhone: ' + phone +
