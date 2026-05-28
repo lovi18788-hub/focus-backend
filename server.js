@@ -1,3 +1,4 @@
+```js
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
@@ -6,155 +7,180 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Email transporter using environment variables (set these in Render dashboard)
+// ─────────────────────────────────────────────────────
+// EMAIL TRANSPORTER
+// ─────────────────────────────────────────────────────
+
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.EMAIL_USER,  // Add in Render: lovi18788@gmail.com
-    pass: process.env.EMAIL_PASS,  // Add in Render: your app password (no spaces)
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
-// Health check route
+// ─────────────────────────────────────────────────────
+// HEALTH CHECK
+// ─────────────────────────────────────────────────────
+
 app.get('/', (req, res) => {
-  res.json({ status: 'Focus Health Club backend is running ✅' });
+  res.json({
+    success: true,
+    message: 'Focus Health Club backend is running ✅',
+  });
 });
 
-// Inquiry form submission
+// ─────────────────────────────────────────────────────
+// SEND INQUIRY
+// ─────────────────────────────────────────────────────
+
 app.post('/send-inquiry', async (req, res) => {
-  const { name, phone, email, service, message } = req.body;
-
-  if (!name || !phone || !message) {
-    return res.status(400).json({ success: false, error: 'Name, phone, and message are required.' });
-  }
-
-  const mailOptions = {
-    from: `"Focus Health Club Website" <${process.env.EMAIL_USER}>`,
-    to: process.env.EMAIL_USER,
-    subject: `New Inquiry from ${name} - Focus Health Club`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #111; color: #fff; padding: 30px; border-radius: 10px;">
-        <h2 style="color: #c9a84c; border-bottom: 2px solid #c9a84c; padding-bottom: 10px;">
-          New Inquiry — Focus Health Club
-        </h2>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-          <tr>
-            <td style="padding: 10px; color: #aaa; width: 140px;">Name</td>
-            <td style="padding: 10px; color: #fff; font-weight: bold;">${name}</td>
-          </tr>
-          <tr style="background: #1a1a1a;">
-            <td style="padding: 10px; color: #aaa;">Phone</td>
-            <td style="padding: 10px; color: #fff; font-weight: bold;">${phone}</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px; color: #aaa;">Email</td>
-            <td style="padding: 10px; color: #fff;">${email || 'Not provided'}</td>
-          </tr>
-          <tr style="background: #1a1a1a;">
-            <td style="padding: 10px; color: #aaa;">Service Interest</td>
-            <td style="padding: 10px; color: #c9a84c; font-weight: bold;">${service || 'General Inquiry'}</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px; color: #aaa; vertical-align: top;">Message</td>
-            <td style="padding: 10px; color: #fff;">${message}</td>
-          </tr>
-        </table>
-        <p style="margin-top: 30px; color: #555; font-size: 12px;">
-          Sent from Focus Health Club website inquiry form
-        </p>
-      </div>
-    `,
-  };
-
-  // Auto-reply to the client (if email provided)
-  const autoReply = email ? {
-    from: `"Focus Health Club" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `Thank you for contacting Focus Health Club, ${name}!`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #111; color: #fff; padding: 30px; border-radius: 10px;">
-        <h2 style="color: #c9a84c;">Focus Health Club</h2>
-        <p style="color: #ccc;">Dear <strong>${name}</strong>,</p>
-        <p style="color: #ccc;">Thank you for reaching out to us! We have received your inquiry and our team will contact you shortly on <strong>${phone}</strong>.</p>
-        <p style="color: #c9a84c; font-weight: bold;">Transform Your Body. Transform Your Life.</p>
-        <p style="color: #555; font-size: 12px; margin-top: 30px;">Focus Health Club, Ludhiana, Punjab</p>
-      </div>
-    `,
-  } : null;
-
   try {
+    const { name, phone, email, service, message } = req.body;
+
+    // Validation
+    if (!name || !phone || !message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name, phone, and message are required.',
+      });
+    }
+
+    // Email to gym owner
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: `New Inquiry from ${name}`,
+      html: `
+        <h2>New Inquiry - Focus Health Club</h2>
+
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Email:</strong> ${email || 'Not provided'}</p>
+        <p><strong>Service:</strong> ${service || 'General Inquiry'}</p>
+        <p><strong>Message:</strong></p>
+
+        <p>${message}</p>
+      `,
+    };
+
+    // Auto reply to customer
+    const autoReply = email
+      ? {
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: 'Thank You For Contacting Focus Health Club',
+          html: `
+            <h2>Focus Health Club</h2>
+
+            <p>Hi ${name},</p>
+
+            <p>
+              Thank you for contacting us.
+              We have received your inquiry successfully.
+            </p>
+
+            <p>
+              Our team will contact you shortly on:
+              <strong>${phone}</strong>
+            </p>
+
+            <p>
+              Stay Strong 💪
+            </p>
+          `,
+        }
+      : null;
+
+    // Send emails
     await transporter.sendMail(mailOptions);
-    if (autoReply) await transporter.sendMail(autoReply);
-    res.json({ success: true, message: 'Inquiry sent successfully!' });
+
+    if (autoReply) {
+      await transporter.sendMail(autoReply);
+    }
+
+    // Success response
+    res.json({
+      success: true,
+      message: 'Inquiry sent successfully!',
+    });
+
   } catch (error) {
-    console.error('Email error:', error);
-    res.status(500).json({ success: false, error: 'Failed to send email. Please try again.' });
+    console.error('SEND INQUIRY ERROR:', error);
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send inquiry.',
+    });
   }
 });
 
-// Membership booking
+// ─────────────────────────────────────────────────────
+// MEMBERSHIP BOOKING
+// ─────────────────────────────────────────────────────
+
 app.post('/book-membership', async (req, res) => {
-  const { name, phone, email, plan, startDate, message } = req.body;
-
-  if (!name || !phone || !plan) {
-    return res.status(400).json({ success: false, error: 'Name, phone, and plan are required.' });
-  }
-
-  const mailOptions = {
-    from: `"Focus Health Club Website" <${process.env.EMAIL_USER}>`,
-    to: process.env.EMAIL_USER,
-    subject: `New Membership Booking: ${plan} — ${name}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #111; color: #fff; padding: 30px; border-radius: 10px;">
-        <h2 style="color: #c9a84c; border-bottom: 2px solid #c9a84c; padding-bottom: 10px;">
-          New Membership Booking — Focus Health Club
-        </h2>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-          <tr>
-            <td style="padding: 10px; color: #aaa; width: 140px;">Name</td>
-            <td style="padding: 10px; color: #fff; font-weight: bold;">${name}</td>
-          </tr>
-          <tr style="background: #1a1a1a;">
-            <td style="padding: 10px; color: #aaa;">Phone</td>
-            <td style="padding: 10px; color: #fff; font-weight: bold;">${phone}</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px; color: #aaa;">Email</td>
-            <td style="padding: 10px; color: #fff;">${email || 'Not provided'}</td>
-          </tr>
-          <tr style="background: #1a1a1a;">
-            <td style="padding: 10px; color: #aaa;">Plan Selected</td>
-            <td style="padding: 10px; color: #c9a84c; font-weight: bold; font-size: 18px;">${plan}</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px; color: #aaa;">Start Date</td>
-            <td style="padding: 10px; color: #fff;">${startDate || 'As soon as possible'}</td>
-          </tr>
-          <tr style="background: #1a1a1a;">
-            <td style="padding: 10px; color: #aaa; vertical-align: top;">Notes</td>
-            <td style="padding: 10px; color: #fff;">${message || 'None'}</td>
-          </tr>
-        </table>
-        <p style="margin-top: 30px; color: #555; font-size: 12px;">
-          Sent from Focus Health Club membership booking form
-        </p>
-      </div>
-    `,
-  };
-
   try {
+    const { name, phone, email, plan, startDate, message } = req.body;
+
+    // Validation
+    if (!name || !phone || !plan) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name, phone, and plan are required.',
+      });
+    }
+
+    // Email to gym owner
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: `New Membership Booking - ${plan}`,
+      html: `
+        <h2>New Membership Booking</h2>
+
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Email:</strong> ${email || 'Not provided'}</p>
+        <p><strong>Plan:</strong> ${plan}</p>
+        <p><strong>Start Date:</strong> ${startDate || 'Not selected'}</p>
+        <p><strong>Notes:</strong></p>
+
+        <p>${message || 'No notes provided'}</p>
+      `,
+    };
+
+    // Send email
     await transporter.sendMail(mailOptions);
-    res.json({ success: true, message: 'Membership booking received!' });
+
+    // Success response
+    res.json({
+      success: true,
+      message: 'Membership booking received!',
+    });
+
   } catch (error) {
-    console.error('Email error:', error);
-    res.status(500).json({ success: false, error: 'Failed to process booking. Please try again.' });
+    console.error('BOOKING ERROR:', error);
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process booking.',
+    });
   }
 });
+
+// ─────────────────────────────────────────────────────
+// START SERVER
+// ─────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`Focus Health Club server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
+```
