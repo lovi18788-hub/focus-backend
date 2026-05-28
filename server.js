@@ -12,10 +12,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// ─────────────────────────────────────────────────────
-// EMAIL TRANSPORTER
-// ─────────────────────────────────────────────────────
-
+// Gmail SMTP Transporter
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -26,44 +23,36 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ─────────────────────────────────────────────────────
-// HEALTH CHECK
-// ─────────────────────────────────────────────────────
-
+// Root Route
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Focus Health Club backend is running ✅',
+    message: 'Focus Health Club Backend Running Successfully ✅',
   });
 });
 
-// ─────────────────────────────────────────────────────
-// SEND INQUIRY
-// ─────────────────────────────────────────────────────
-
+// Send Inquiry Route
 app.post('/send-inquiry', async (req, res) => {
   try {
     const { name, phone, email, service, message } = req.body;
 
-    // Validation
     if (!name || !phone || !message) {
       return res.status(400).json({
         success: false,
-        error: 'Name, phone, and message are required.',
+        error: 'Please fill all required fields.',
       });
     }
 
-    // Email to gym owner
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
-      subject: `New Inquiry from ${name}`,
+      subject: `New Inquiry From ${name}`,
       html: `
         <h2>New Inquiry - Focus Health Club</h2>
 
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Email:</strong> ${email || 'Not provided'}</p>
+        <p><strong>Email:</strong> ${email || 'Not Provided'}</p>
         <p><strong>Service:</strong> ${service || 'General Inquiry'}</p>
         <p><strong>Message:</strong></p>
 
@@ -71,42 +60,8 @@ app.post('/send-inquiry', async (req, res) => {
       `,
     };
 
-    // Auto reply to customer
-    const autoReply = email
-      ? {
-          from: process.env.EMAIL_USER,
-          to: email,
-          subject: 'Thank You For Contacting Focus Health Club',
-          html: `
-            <h2>Focus Health Club</h2>
-
-            <p>Hi ${name},</p>
-
-            <p>
-              Thank you for contacting us.
-              We have received your inquiry successfully.
-            </p>
-
-            <p>
-              Our team will contact you shortly on:
-              <strong>${phone}</strong>
-            </p>
-
-            <p>
-              Stay Strong 💪
-            </p>
-          `,
-        }
-      : null;
-
-    // Send emails
     await transporter.sendMail(mailOptions);
 
-    if (autoReply) {
-      await transporter.sendMail(autoReply);
-    }
-
-    // Success response
     res.json({
       success: true,
       message: 'Inquiry sent successfully!',
@@ -122,23 +77,18 @@ app.post('/send-inquiry', async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────
-// MEMBERSHIP BOOKING
-// ─────────────────────────────────────────────────────
-
+// Membership Booking Route
 app.post('/book-membership', async (req, res) => {
   try {
     const { name, phone, email, plan, startDate, message } = req.body;
 
-    // Validation
     if (!name || !phone || !plan) {
       return res.status(400).json({
         success: false,
-        error: 'Name, phone, and plan are required.',
+        error: 'Please fill all required fields.',
       });
     }
 
-    // Email to gym owner
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
@@ -148,19 +98,17 @@ app.post('/book-membership', async (req, res) => {
 
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Email:</strong> ${email || 'Not provided'}</p>
+        <p><strong>Email:</strong> ${email || 'Not Provided'}</p>
         <p><strong>Plan:</strong> ${plan}</p>
-        <p><strong>Start Date:</strong> ${startDate || 'Not selected'}</p>
-        <p><strong>Notes:</strong></p>
+        <p><strong>Start Date:</strong> ${startDate || 'Not Selected'}</p>
+        <p><strong>Message:</strong></p>
 
-        <p>${message || 'No notes provided'}</p>
+        <p>${message || 'No Message'}</p>
       `,
     };
 
-    // Send email
     await transporter.sendMail(mailOptions);
 
-    // Success response
     res.json({
       success: true,
       message: 'Membership booking received!',
@@ -176,10 +124,7 @@ app.post('/book-membership', async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────
-// START SERVER
-// ─────────────────────────────────────────────────────
-
+// Start Server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
