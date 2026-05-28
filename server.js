@@ -15,8 +15,8 @@ app.use(express.json());
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -25,6 +25,15 @@ const transporter = nodemailer.createTransport({
 
 app.get('/', (req, res) => {
   res.send('Backend running');
+});
+
+app.get('/test-email', async (req, res) => {
+  try {
+    await transporter.verify();
+    res.json({ success: true, message: 'Gmail connection working perfectly.' });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
 });
 
 app.post('/send-inquiry', async (req, res) => {
@@ -46,8 +55,7 @@ app.post('/send-inquiry', async (req, res) => {
     res.json({ success: true });
 
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
