@@ -14,12 +14,12 @@ app.use(cors({
 app.use(express.json());
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: 'smtp-relay.brevo.com',
   port: 587,
   secure: false,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_PASS
   }
 });
 
@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
 app.get('/test-email', async (req, res) => {
   try {
     await transporter.verify();
-    res.json({ success: true, message: 'Gmail connection working perfectly.' });
+    res.json({ success: true, message: 'Brevo connection working perfectly.' });
   } catch (error) {
     res.json({ success: false, error: error.message });
   }
@@ -41,15 +41,41 @@ app.post('/send-inquiry', async (req, res) => {
     const { name, phone, email, service, message } = req.body;
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
+      from: process.env.BREVO_USER,
+      to: 'lovi18788@gmail.com',
       subject: 'New Inquiry — Focus Health Club',
-      text:
-        'Name: ' + name +
-        '\nPhone: ' + phone +
-        '\nEmail: ' + email +
-        '\nService: ' + service +
-        '\nMessage: ' + message
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;padding:30px;background:#f9f9f9;border-radius:10px;">
+          <h2 style="color:#111;border-bottom:3px solid #c8a96e;padding-bottom:10px;">
+            New Inquiry — Focus Health Club
+          </h2>
+          <table style="width:100%;border-collapse:collapse;margin-top:20px;">
+            <tr>
+              <td style="padding:10px;font-weight:bold;color:#555;width:120px;">Name</td>
+              <td style="padding:10px;color:#111;">${name}</td>
+            </tr>
+            <tr style="background:#fff;">
+              <td style="padding:10px;font-weight:bold;color:#555;">Phone</td>
+              <td style="padding:10px;color:#111;">${phone}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px;font-weight:bold;color:#555;">Email</td>
+              <td style="padding:10px;color:#111;">${email || 'Not provided'}</td>
+            </tr>
+            <tr style="background:#fff;">
+              <td style="padding:10px;font-weight:bold;color:#555;">Service</td>
+              <td style="padding:10px;color:#111;">${service || 'Not specified'}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px;font-weight:bold;color:#555;">Message</td>
+              <td style="padding:10px;color:#111;">${message || 'No message'}</td>
+            </tr>
+          </table>
+          <p style="margin-top:24px;font-size:12px;color:#aaa;">
+            Sent from Focus Health Club website inquiry form.
+          </p>
+        </div>
+      `
     });
 
     res.json({ success: true });
