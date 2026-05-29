@@ -1,6 +1,6 @@
 const express = require('express');
-const nodemailer = require('nodemailer');
 const cors = require('cors');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,26 +13,26 @@ app.use(cors({
 
 app.use(express.json());
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS
-  }
-});
-
 app.get('/', (req, res) => {
   res.send('Backend running');
 });
 
 app.get('/test-email', async (req, res) => {
   try {
-    await transporter.verify();
-    res.json({ success: true, message: 'Brevo connection working perfectly.' });
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: 'Focus Health Club', email: 'lovi18788@gmail.com' },
+      to: [{ email: 'lovi18788@gmail.com' }],
+      subject: 'Test Email — Backend Working',
+      textContent: 'Your Focus Health Club backend is working perfectly.'
+    }, {
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    res.json({ success: true, message: 'Test email sent to lovi18788@gmail.com' });
   } catch (error) {
-    res.json({ success: false, error: error.message });
+    res.json({ success: false, error: error.response ? error.response.data : error.message });
   }
 });
 
@@ -40,11 +40,11 @@ app.post('/send-inquiry', async (req, res) => {
   try {
     const { name, phone, email, service, message } = req.body;
 
-    await transporter.sendMail({
-      from: process.env.BREVO_USER,
-      to: 'lovi18788@gmail.com',
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: 'Focus Health Club Website', email: 'lovi18788@gmail.com' },
+      to: [{ email: 'lovi18788@gmail.com' }],
       subject: 'New Inquiry — Focus Health Club',
-      html: `
+      htmlContent: `
         <div style="font-family:Arial,sans-serif;max-width:600px;padding:30px;background:#f9f9f9;border-radius:10px;">
           <h2 style="color:#111;border-bottom:3px solid #c8a96e;padding-bottom:10px;">
             New Inquiry — Focus Health Club
@@ -76,12 +76,20 @@ app.post('/send-inquiry', async (req, res) => {
           </p>
         </div>
       `
+    }, {
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json'
+      }
     });
 
     res.json({ success: true });
 
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      error: error.response ? error.response.data : error.message 
+    });
   }
 });
 
